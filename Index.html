@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<title>Daftar PR 7-6</title>
+<style>
+body{font-family:sans-serif;background:#f5f5f5}
+.dark{background:#121212;color:white}
+.card{background:white;padding:12px;margin:10px;border-radius:8px}
+.dark .card{background:#1e1e1e}
+button{padding:8px;width:100%;margin-top:5px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+#aiBtn{position:fixed;bottom:20px;right:20px}
+</style>
+</head>
+
+<body onload="initAuth0()">
+<h3>📘 Daftar PR 7-6</h3>
+
+<button onclick="loginAuth0()">Login</button>
+<button onclick="logoutAuth0()">Logout</button>
+
+<div class="card">
+<h4>PR</h4>
+<pre id="pr"></pre>
+<h4>Soal</h4>
+<pre id="soal"></pre>
+<h4>Note</h4>
+<pre id="note"></pre>
+<p>Created by NaStudio</p>
+</div>
+
+<div class="card">
+<h4>📊 Dashboard Admin</h4>
+<div id="users" class="grid"></div>
+</div>
+
+<button id="aiBtn" onclick="ai()">🤖 AI Help</button>
+
+<script src="auth0.js"></script>
+<script>
+async function load(){
+ const t = await getToken();
+
+ await fetch("/api?action=sync",{
+  headers:{ Authorization:`Bearer ${t}` }
+ });
+
+ const d = await fetch("/api?action=data",{
+  headers:{ Authorization:`Bearer ${t}` }
+ });
+ const j = await d.json();
+ pr.textContent = JSON.stringify(j.pr,null,2);
+ soal.textContent = JSON.stringify(j.soal,null,2);
+ note.textContent = j.note;
+
+ const u = await fetch("/api?action=users",{
+  headers:{ Authorization:`Bearer ${t}` }
+ });
+ const users = await u.json();
+ usersDiv.innerHTML="";
+ users.forEach(x=>{
+  usersDiv.innerHTML += `
+   <div class="card">
+    <b>${x.username}</b><br>
+    Role: ${x.role}<br>
+    Approved: ${x.approved}
+    <button onclick="approve('${x.id}','user')">User</button>
+    <button onclick="approve('${x.id}','admin')">Admin</button>
+   </div>`;
+ });
+}
+
+async function approve(id, role){
+ const t = await getToken();
+ await fetch("/api?action=approve",{
+  method:"POST",
+  headers:{
+   "Content-Type":"application/json",
+   Authorization:`Bearer ${t}`
+  },
+  body:JSON.stringify({ id, role })
+ });
+ load();
+}
+
+async function ai(){
+ const q = prompt("Tanya AI");
+ const t = await getToken();
+ const r = await fetch("/api?action=ai",{
+  method:"POST",
+  headers:{
+   "Content-Type":"application/json",
+   Authorization:`Bearer ${t}`
+  },
+  body:JSON.stringify({ q })
+ });
+ alert((await r.json()).reply);
+}
+
+setTimeout(load, 1500);
+</script>
+</body>
+</html>
